@@ -1,0 +1,25 @@
+{
+  "name": "prelej",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Přelej – offline barevná přelévací hra (PWA) bez reklam, registrací a soutěží.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "levels": "tsx scripts/generate-levels.ts",
+    "icons": "node scripts/make-icons.mjs"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "sharp": "^0.35.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^6.4.5",
+    "vite-plugin-pwa": "^2.0.0",
+    "vitest": "^5.0.5"
+  }
+}

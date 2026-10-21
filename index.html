@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="cs">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <title>Přelej</title>
+    <meta name="description" content="Barevná přelévací hra. Offline, bez reklam, bez registrace." />
+    <meta name="theme-color" content="#0b0f1a" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Přelej" />
+    <meta name="format-detection" content="telephone=no" />
+    <link rel="icon" type="image/svg+xml" href="icon.svg" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="top">
+        <button id="btn-menu" class="icon-btn" aria-label="Úrovně a nastavení">
+          <svg viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" /></svg>
+        </button>
+        <div class="title">
+          <span class="label">Úroveň</span>
+          <span id="lvl" class="num">1</span>
+        </div>
+        <div class="moves" aria-live="polite">
+          <span id="moves" class="num">0</span>
+          <span id="moves-label" class="label">tahů</span>
+        </div>
+      </header>
+
+      <div id="tags" class="tags"></div>
+
+      <main id="board" aria-label="Hrací plocha"></main>
+
+      <nav class="tools">
+        <button id="btn-undo" class="tool" aria-label="Zpět">
+          <svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" /></svg>
+          <span>Zpět</span>
+        </button>
+        <button id="btn-restart" class="tool" aria-label="Začít znovu">
+          <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg>
+          <span>Znovu</span>
+        </button>
+        <button id="btn-hint" class="tool" aria-label="Nápověda">
+          <svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4" /><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z" /></svg>
+          <span>Nápověda</span>
+        </button>
+        <button id="btn-extra" class="tool" aria-label="Přidat malou zkumavku">
+          <svg viewBox="0 0 24 24"><path d="M9 3v13a3 3 0 0 0 6 0V3" /><path d="M7.5 3h9" /><path d="M19 8v6M16 11h6" /></svg>
+          <span>+ Zkumavka</span>
+        </button>
+      </nav>
+
+      <div id="toast" class="toast" role="status"></div>
+
+      <section id="win" class="overlay" hidden>
+        <div class="card win-card">
+          <div class="win-burst" aria-hidden="true"></div>
+          <h2 id="win-title">Hotovo</h2>
+          <p id="win-text"></p>
+          <button id="btn-next" class="primary">Další úroveň</button>
+          <button id="btn-replay" class="ghost">Zahrát znovu</button>
+        </div>
+      </section>
+
+      <section id="menu" class="overlay sheet-overlay" hidden>
+        <div class="sheet">
+          <div class="sheet-head">
+            <h2>Úrovně</h2>
+            <button id="btn-close" class="icon-btn" aria-label="Zavřít">
+              <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18" /></svg>
+            </button>
+          </div>
+          <p id="progress-text" class="muted"></p>
+          <div id="ranges" class="ranges"></div>
+          <div id="grid" class="grid"></div>
+
+          <h3>Nastavení</h3>
+          <label class="row-toggle"><span>Symboly na barvách</span><input type="checkbox" id="set-symbols" switch /></label>
+          <label class="row-toggle"><span>Zvuky</span><input type="checkbox" id="set-sound" switch /></label>
+          <label class="row-toggle"><span>Haptika</span><input type="checkbox" id="set-haptics" switch /></label>
+          <button id="btn-reset" class="danger">Smazat postup</button>
+          <p class="muted small">
+            Přelej · verze <span id="version"></span><br />
+            Bez reklam, bez účtu, bez sledování. Vše se ukládá jen v tomto zařízení.<br />
+            Na iPhonu: Safari → Sdílet → <b>Přidat na plochu</b> – pak hra běží i offline.
+          </p>
+        </div>
+      </section>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
