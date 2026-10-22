@@ -9,7 +9,7 @@ import {
   applyMove,
   isSolved,
   isComplete,
-  hasMoves,
+  isDeadlocked,
   topRun,
 } from './game/core';
 import { solve } from './game/solver';
@@ -36,6 +36,9 @@ let hints = 0;
 let selected: number | null = null;
 let busy = false;
 let finished = false;
+/** úplný deadlock – žádný smysluplný tah, plocha je zamčená */
+let stuck = false;
+let stuckTimer: number | undefined;
 let menuRange = Math.floor((level - 1) / 100);
 
 sfx.enabled = save.settings.sound;
@@ -60,9 +63,11 @@ function startLevel(n: number, resume = false) {
     hints = 0;
   }
   persist(true);
+  clearStuck();
   renderAll();
-  showTips();
   if (isSolved(state)) onWin();
+  else if (isDeadlocked(state)) enterStuck(0);
+  else showTips();
 }
 
 function persist(immediate = false) {
@@ -207,9 +212,9 @@ function renderHud() {
   $('moves').textContent = String(history.length);
   $('moves-label').textContent = tahy(history.length).split(' ')[1];
   ($('btn-undo') as HTMLButtonElement).disabled = history.length === 0 || finished;
-  ($('btn-restart') as HTMLButtonElement).disabled = (history.length === 0 && !extraUsed) || finished;
+  ($('btn-restart') as HTMLButtonElement).disabled = (history.length === 0 && !extraUsed && !stuck) || finished;
   ($('btn-extra') as HTMLButtonElement).disabled = extraUsed || finished;
-  ($('btn-hint') as HTMLButtonElement).disabled = finished;
+  ($('btn-hint') as HTMLButtonElement).disabled = finished || stuck;
 
   const def = levels[level - 1];
   const tags: [string, string?][] = [];
@@ -260,6 +265,10 @@ function showTips() {
 // ---------------------------------------------------------------- ovládání
 function onTubeTap(i: number) {
   if (busy || finished) return;
+  if (stuck) {
+    showStuck();
+    return;
+  }
   clearHint();
   if (selected === null) {
     if (!state.tubes[i].length || isComplete(state.tubes[i], state.per)) {
@@ -367,9 +376,54 @@ function afterMove(to: number) {
     onWin();
     return;
   }
-  if (!hasMoves(state)) {
-    toast(extraUsed ? 'Žádný tah. Vrať se zpět nebo začni znovu.' : 'Žádný tah. Vrať se zpět, nebo přidej malou zkumavku.', 3600);
+  if (isDeadlocked(state)) enterStuck(550);
+}
+
+// ---------------------------------------------------------------- deadlock
+function enterStuck(delay: number) {
+  stuck = true;
+  board.classList.add('locked');
+  if (selected !== null) {
+    tubeEls[selected]?.classList.remove('sel');
+    selected = null;
   }
+  clearHint();
+  renderHud();
+  clearTimeout(stuckTimer);
+  stuckTimer = window.setTimeout(() => {
+    sfx.invalid();
+    haptics.tick();
+    showStuck();
+  }, delay);
+}
+
+function showStuck() {
+  if (!stuck) return;
+  const cap = Math.ceil(state.per / 2);
+  ($('btn-stuck-extra') as HTMLButtonElement).hidden = extraUsed;
+  $('btn-stuck-extra').textContent = `+ Malá zkumavka (na ${cap} vrstvy)`;
+  ($('btn-stuck-undo') as HTMLButtonElement).hidden = history.length === 0;
+  $('stuck-text').textContent = extraUsed
+    ? 'Z téhle pozice už nejde nic přelít. Začni znovu, nebo vrať poslední tah.'
+    : 'Z téhle pozice už nejde nic přelít. Začni znovu, přidej malou zkumavku, nebo vrať poslední tah.';
+  $('stuck').hidden = false;
+}
+
+function hideStuck() {
+  clearTimeout(stuckTimer);
+  $('stuck').hidden = true;
+}
+
+function clearStuck() {
+  stuck = false;
+  board.classList.remove('locked');
+  hideStuck();
+}
+
+/** Po změně stavu (zpět, zkumavka) znovu ověří deadlock. */
+function recheckStuck() {
+  clearStuck();
+  if (!isSolved(state) && isDeadlocked(state)) enterStuck(0);
 }
 
 function undo() {
@@ -378,13 +432,16 @@ function undo() {
   state = history.pop()!;
   selected = null;
   persist();
+  clearStuck();
   renderAll();
+  recheckStuck();
   haptics.tick();
 }
 
 function restart() {
   if (busy || finished) return;
-  if (history.length > 5 && !confirm('Začít úroveň znovu?')) return;
+  if (!stuck && history.length > 5 && !confirm('Začít úroveň znovu?')) return;
+  clearStuck();
   clearHint();
   state = levelToState(levels[level - 1]);
   history = [];
@@ -407,7 +464,9 @@ function addExtra() {
   extraUsed = true;
   selected = null;
   persist();
+  clearStuck();
   renderAll();
+  recheckStuck();
   toast(`Přidána malá zkumavka (na ${cap} vrstvy). Jedna na úroveň.`);
 }
 
@@ -419,7 +478,7 @@ function clearHint() {
 }
 
 function hint() {
-  if (busy || finished) return;
+  if (busy || finished || stuck) return;
   clearHint();
   if (selected !== null) {
     tubeEls[selected].classList.remove('sel');
@@ -555,6 +614,13 @@ $('menu').addEventListener('click', (e) => {
   if (e.target === $('menu')) closeMenu();
 });
 $('btn-next').onclick = nextLevel;
+$('btn-stuck-restart').onclick = restart;
+$('btn-stuck-undo').onclick = undo;
+$('btn-stuck-extra').onclick = addExtra;
+$('stuck').addEventListener('click', (e) => {
+  // klepnutí mimo kartu ji zavře, plocha ale zůstane zamčená
+  if (e.target === $('stuck')) hideStuck();
+});
 $('btn-replay').onclick = () => {
   $('win').hidden = true;
   startLevel(level);

@@ -90,21 +90,31 @@ export function isSolved(s: State): boolean {
   return s.tubes.every((t) => t.length === 0 || isComplete(t, s.per));
 }
 
-/** Existuje vůbec nějaký smysluplný tah? */
+/**
+ * Existuje vůbec nějaký smysluplný tah?
+ *
+ * Přelití jednobarevné zkumavky do prázdné se nepočítá: jen přesune barvu
+ * jinam. Kdyby do prázdné zkumavky šlo lít, šlo by tam lít i z kterékoli
+ * smíchané zkumavky, takže skutečný tah by se našel jinde.
+ */
 export function hasMoves(s: State): boolean {
   for (let i = 0; i < s.tubes.length; i++) {
     const a = s.tubes[i];
     if (!a.length || isComplete(a, s.per)) continue;
+    const uniform = topRun(a) === a.length && s.hidden[i] === 0;
     for (let j = 0; j < s.tubes.length; j++) {
       if (pourCount(s, i, j) > 0) {
-        // přelití celé jednobarevné zkumavky do prázdné stejné velikosti nic nezmění
-        const b = s.tubes[j];
-        if (!b.length && topRun(a) === a.length && s.caps[j] >= s.caps[i]) continue;
+        if (uniform && !s.tubes[j].length) continue;
         return true;
       }
     }
   }
   return false;
+}
+
+/** Úplný deadlock: hra není vyřešená a nejde udělat žádný smysluplný tah. */
+export function isDeadlocked(s: State): boolean {
+  return !isSolved(s) && !hasMoves(s);
 }
 
 export function colorCount(s: State): number {

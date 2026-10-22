@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import LEVELS from '../src/levels.json';
-import { levelToState, applyMove, isSolved, pourCount, cloneState, type LevelDef } from '../src/game/core';
+import { levelToState, applyMove, isSolved, pourCount, cloneState, isDeadlocked, type LevelDef } from '../src/game/core';
 import { solve } from '../src/game/solver';
 
 const levels = LEVELS as LevelDef[];
@@ -51,6 +51,33 @@ describe('pravidla', () => {
     expect(pourCount(s, 1, 2)).toBe(2);
     applyMove(s, 1, 2);
     expect(s.tubes).toEqual(['aabb', 'bb', 'aa']);
+  });
+
+  it('pozná úplný deadlock: plné zkumavky, nahoře různé barvy', () => {
+    expect(isDeadlocked(levelToState({ p: 4, t: 'abab,baba' }))).toBe(true);
+    expect(isDeadlocked(levelToState({ p: 4, t: 'aabb,bbaa,ccdd,ddcc' }))).toBe(true);
+  });
+
+  it('volné místo nebo stejná barva navrchu = není deadlock', () => {
+    expect(isDeadlocked(levelToState({ p: 4, t: 'abab,baba,' }))).toBe(false);
+    expect(isDeadlocked(levelToState({ p: 4, t: 'abab,bab' }))).toBe(false);
+    expect(isDeadlocked(levelToState({ p: 4, t: 'aab,bbab,a' }))).toBe(false);
+  });
+
+  it('vyřešená pozice není deadlock', () => {
+    expect(isDeadlocked(levelToState({ p: 4, t: 'aaaa,bbbb' }))).toBe(false);
+  });
+
+  it('malá zkumavka navíc deadlock uvolní', () => {
+    const s = levelToState({ p: 4, t: 'abab,baba' });
+    s.tubes.push('');
+    s.caps.push(2);
+    s.hidden.push(0);
+    expect(isDeadlocked(s)).toBe(false);
+  });
+
+  it('úvodní pozice žádné úrovně není deadlock', () => {
+    levels.forEach((l, i) => expect(isDeadlocked(levelToState(l)), `úroveň ${i + 1}`).toBe(false));
   });
 
   it('skrytá vrstva se odkryje, když se dostane navrch', () => {
