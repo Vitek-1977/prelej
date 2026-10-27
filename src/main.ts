@@ -17,6 +17,7 @@ import { COLORS, symbolSvg } from './ui/palette';
 import { sfx, haptics, unlockAudio } from './ui/feedback';
 import { loadSave, storeSave, requestPersistence, defaultSave, type Save } from './ui/storage';
 import { registerSW } from 'virtual:pwa-register';
+import { setupViewport } from './ui/viewport';
 
 declare const __APP_VERSION__: string;
 
@@ -655,11 +656,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') storeSave(save, true);
 });
 
-let resizeRaf = 0;
-window.addEventListener('resize', () => {
-  cancelAnimationFrame(resizeRaf);
-  resizeRaf = requestAnimationFrame(() => renderBoard());
-});
+setupViewport(board, () => renderBoard());
 
 // ---------------------------------------------------------------- start
 startLevel(level, true);

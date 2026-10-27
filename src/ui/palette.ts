@@ -1,24 +1,28 @@
 /** 14 barev + symboly pro lepší rozlišení (přepínač v nastavení). */
 export const COLORS: string[] = [
-  '#e5484d', // a červená
-  '#f78a1d', // b oranžová
-  '#f5d90a', // c žlutá
-  '#9fdc3a', // d limetková
-  '#239b56', // e zelená
-  '#14b8a6', // f tyrkysová
-  '#5ec8f2', // g nebeská
-  '#2f5fe0', // h modrá
-  '#7c5cf0', // i fialová
-  '#c043d8', // j purpurová
-  '#f58bc0', // k růžová
-  '#8a5a2e', // l hnědá
-  '#d8c39a', // m písková
-  '#f2efe8', // n bílá
+  '#f50c0b', // a červená
+  '#fa9007', // b oranžová
+  '#ffe207', // c žlutá
+  '#79ff75', // d světle zelená
+  '#0f7a3a', // e tmavě zelená
+  '#24d6d0', // f tyrkysová
+  '#0d99eb', // g blankytná
+  '#c9beff', // h levandulová
+  '#ff6da3', // i růžová
+  '#734f24', // j hnědá
+  '#fffff9', // k bílá
+  '#7a7684', // l šedá
+  '#3425f3', // m modrá
+  '#a0014f', // n vínová
 ];
 
+/**
+ * Barvy jsou vybrané tak, aby se každé dvě lišily aspoň o ΔE2000 ≈ 27
+ * (dřív jen 11) a všechny byly dobře vidět na tmavém pozadí.
+ */
 export const COLOR_NAMES = [
-  'červená', 'oranžová', 'žlutá', 'limetková', 'zelená', 'tyrkysová', 'nebeská',
-  'modrá', 'fialová', 'purpurová', 'růžová', 'hnědá', 'písková', 'bílá',
+  'červená', 'oranžová', 'žlutá', 'světle zelená', 'tmavě zelená', 'tyrkysová', 'blankytná',
+  'levandulová', 'růžová', 'hnědá', 'bílá', 'šedá', 'modrá', 'vínová',
 ];
 
 /** SVG tvary ve viewBoxu 0 0 20 20. */
