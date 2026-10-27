@@ -59,6 +59,14 @@ export function isComplete(t: string, per: number): boolean {
   return t.length === per && topRun(t) === per;
 }
 
+/**
+ * Hotová zkumavka: plná jedné barvy a bez skrytých vrstev.
+ * Zkumavka s otazníkem se nepočítá, ani když je pod ním náhodou správná barva.
+ */
+export function isTubeDone(s: State, i: number): boolean {
+  return s.hidden[i] === 0 && isComplete(s.tubes[i], s.per);
+}
+
 /** Kolik vrstev se přelije z `from` do `to` (0 = tah není možný). */
 export function pourCount(s: State, from: number, to: number): number {
   if (from === to) return 0;
@@ -87,7 +95,7 @@ export function applyMove(s: State, from: number, to: number): number {
 }
 
 export function isSolved(s: State): boolean {
-  return s.tubes.every((t) => t.length === 0 || isComplete(t, s.per));
+  return s.tubes.every((t, i) => t.length === 0 || isTubeDone(s, i));
 }
 
 /**
@@ -100,7 +108,7 @@ export function isSolved(s: State): boolean {
 export function hasMoves(s: State): boolean {
   for (let i = 0; i < s.tubes.length; i++) {
     const a = s.tubes[i];
-    if (!a.length || isComplete(a, s.per)) continue;
+    if (!a.length || isTubeDone(s, i)) continue;
     const uniform = topRun(a) === a.length && s.hidden[i] === 0;
     for (let j = 0; j < s.tubes.length; j++) {
       if (pourCount(s, i, j) > 0) {

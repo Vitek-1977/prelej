@@ -100,15 +100,16 @@ function acceptable(tubes: string[], per: number): boolean {
 
 interface Scored { tubes: string[]; diff: number; len: number }
 
-function difficulty(tubes: string[], per: number, seed: number): Scored | null {
+function difficulty(tubes: string[], per: number, seed: number, withHidden: boolean): Scored | null {
   const caps = tubes.map(() => per);
-  const smart = solve(tubes, caps, per, { limit: 300_000 });
+  const hidden = tubes.map((t) => (withHidden ? Math.max(0, t.length - 1) : 0));
+  const smart = solve(tubes, caps, per, { limit: 300_000, hidden });
   if (smart.status !== 'solved') return null;
   // „lidská“ obtížnost: kolik stavů projde DFS s náhodným pořadím tahů
   let total = 0;
   const RUNS = 3;
   for (let r = 0; r < RUNS; r++) {
-    const res = solve(tubes, caps, per, { limit: 60_000, rnd: mulberry32(hashSeed(seed, r)) });
+    const res = solve(tubes, caps, per, { limit: 60_000, rnd: mulberry32(hashSeed(seed, r)), hidden });
     total += res.status === 'solved' ? res.nodes : 60_000 * 1.5;
   }
   const diff = Math.log2(total / RUNS + 1) + smart.moves.length * 0.05;
@@ -132,7 +133,7 @@ export function generateLevel(n: number): LevelDef {
       attempts++;
       const tubes = makeCandidate(p.colors, p.per, empties, rnd);
       if (!acceptable(tubes, p.per)) continue;
-      const s = difficulty(tubes, p.per, hashSeed(SALT, n, attempts));
+      const s = difficulty(tubes, p.per, hashSeed(SALT, n, attempts), p.hidden);
       if (s) out.push(s);
     }
     return out;

@@ -1,7 +1,8 @@
 /**
  * Solver: DFS s pamětí navštívených stavů a heuristickým řazením tahů.
- * Pracuje s plnou informací (ignoruje skryté vrstvy) – používá se
- * při generování úrovní a pro nápovědu.
+ * Zná barvy i pod otazníky, ale řídí se stejnými pravidly jako hra:
+ * lije jen viditelnou část a zkumavka se skrytou vrstvou není hotová.
+ * Používá se při generování úrovní a pro nápovědu.
  */
 import type { Move } from './core';
 
@@ -15,6 +16,8 @@ export interface SolveOptions {
   limit?: number;
   /** náhodné řazení tahů (pro měření obtížnosti); jinak heuristika */
   rnd?: () => number;
+  /** počet skrytých spodních vrstev v každé zkumavce (výchozí 0) */
+  hidden?: number[];
 }
 
 function topRun(t: string): number {
@@ -34,20 +37,21 @@ export function solve(tubes: string[], caps: number[], per: number, opts: SolveO
   let nodes = 0;
   const n = tubes.length;
   const ts = [...tubes];
+  const hid = opts.hidden ? [...opts.hidden] : new Array<number>(n).fill(0);
 
   const complete = (t: string) => t.length === per && topRun(t) === per;
+  const done = (i: number) => hid[i] === 0 && complete(ts[i]);
 
   const key = () => {
     const parts = new Array<string>(n);
-    for (let i = 0; i < n; i++) parts[i] = caps[i] + ts[i];
+    for (let i = 0; i < n; i++) parts[i] = caps[i] + '/' + hid[i] + ts[i];
     parts.sort();
     return parts.join('|');
   };
 
   const solved = () => {
     for (let i = 0; i < n; i++) {
-      const t = ts[i];
-      if (t.length && !complete(t)) return false;
+      if (ts[i].length && !done(i)) return false;
     }
     return true;
   };
@@ -58,8 +62,8 @@ export function solve(tubes: string[], caps: number[], per: number, opts: SolveO
     const out: Cand[] = [];
     for (let i = 0; i < n; i++) {
       const a = ts[i];
-      if (!a.length || complete(a)) continue;
-      const run = topRun(a);
+      if (!a.length || done(i)) continue;
+      const run = Math.min(topRun(a), a.length - hid[i]);
       const c = a[a.length - 1];
       const uniform = run === a.length;
       const emptyCapsTried = new Set<number>();
@@ -84,13 +88,14 @@ export function solve(tubes: string[], caps: number[], per: number, opts: SolveO
           score = 0;
           if (b.length) {
             score += 10;
-            if (topRun(b) === b.length && b.length + count === per) score += 30; // dokončí barvu
+            if (topRun(b) === b.length && b.length + count === per && hid[j] === 0) score += 30; // dokončí barvu
             if (topRun(b) === b.length) score += 4;
           } else {
             score -= 2;
           }
           if (count === run) score += 6; else score -= 6;
           if (count === a.length) score += 3; // vyprázdní zkumavku
+          else if (hid[i] >= a.length - count) score += 5; // odkryje otazník
           else if (topRun(a.slice(0, a.length - count)) >= 2) score += 1;
         }
         out.push({ from: i, to: j, count, score });
@@ -111,13 +116,16 @@ export function solve(tubes: string[], caps: number[], per: number, opts: SolveO
     for (const m of gen()) {
       const a = ts[m.from];
       const b = ts[m.to];
+      const h = hid[m.from];
       ts[m.from] = a.slice(0, a.length - m.count);
       ts[m.to] = b + a.slice(a.length - m.count);
+      hid[m.from] = Math.min(h, Math.max(0, ts[m.from].length - 1));
       path.push({ from: m.from, to: m.to, count: m.count });
       if (dfs()) return true;
       path.pop();
       ts[m.from] = a;
       ts[m.to] = b;
+      hid[m.from] = h;
     }
     return false;
   };

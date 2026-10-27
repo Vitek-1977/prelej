@@ -8,7 +8,7 @@ import {
   pourCount,
   applyMove,
   isSolved,
-  isComplete,
+  isTubeDone,
   isDeadlocked,
   topRun,
 } from './game/core';
@@ -156,7 +156,7 @@ function renderTube(i: number, opts: RenderOpts): HTMLButtonElement {
   el.setAttribute('aria-label', `Zkumavka ${i + 1}`);
   if (cap < state.per) el.classList.add('small');
   if (i === selected) el.classList.add('sel');
-  if (isComplete(t, state.per)) {
+  if (isTubeDone(state, i)) {
     el.classList.add('done');
     el.style.setProperty('--dc', COLORS[t.charCodeAt(0) - 97]);
   }
@@ -272,7 +272,7 @@ function onTubeTap(i: number) {
   }
   clearHint();
   if (selected === null) {
-    if (!state.tubes[i].length || isComplete(state.tubes[i], state.per)) {
+    if (!state.tubes[i].length || isTubeDone(state, i)) {
       shake(i);
       return;
     }
@@ -292,7 +292,7 @@ function onTubeTap(i: number) {
     // jiná zkumavka s obsahem → přepnout výběr, jinak zatřást
     tubeEls[from].classList.remove('sel');
     selected = null;
-    if (state.tubes[i].length && !isComplete(state.tubes[i], state.per) && state.tubes[from].length) {
+    if (state.tubes[i].length && !isTubeDone(state, i) && state.tubes[from].length) {
       const fromTop = state.tubes[from].at(-1);
       const toTop = state.tubes[i].at(-1);
       if (fromTop !== toTop) {
@@ -369,7 +369,7 @@ function doMove(from: number, to: number) {
 
 function afterMove(to: number) {
   persist();
-  if (isComplete(state.tubes[to], state.per)) {
+  if (isTubeDone(state, to)) {
     renderBoard();
     sfx.complete();
   }
@@ -487,7 +487,7 @@ function hint() {
   }
   toast('Přemýšlím…', 800);
   setTimeout(() => {
-    const res = solve(state.tubes, state.caps, state.per, { limit: 250_000 });
+    const res = solve(state.tubes, state.caps, state.per, { limit: 250_000, hidden: state.hidden });
     if (res.status === 'solved' && res.moves.length) {
       const m = res.moves[0];
       if (!pourCount(state, m.from, m.to)) {

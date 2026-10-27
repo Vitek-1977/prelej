@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import LEVELS from '../src/levels.json';
-import { levelToState, applyMove, isSolved, pourCount, cloneState, isDeadlocked, type LevelDef } from '../src/game/core';
+import { levelToState, applyMove, isSolved, pourCount, cloneState, isDeadlocked, isTubeDone, type LevelDef } from '../src/game/core';
 import { solve } from '../src/game/solver';
 
 const levels = LEVELS as LevelDef[];
@@ -26,18 +26,13 @@ describe('úrovně', () => {
   it('všechny jdou vyřešit i podle herních pravidel (se skrytými vrstvami)', () => {
     levels.forEach((l, i) => {
       const s = levelToState(l);
-      const res = solve(s.tubes, s.caps, s.per, { limit: 400_000 });
+      const res = solve(s.tubes, s.caps, s.per, { limit: 400_000, hidden: s.hidden });
       expect(res.status, `úroveň ${i + 1}`).toBe('solved');
       // přehrání řešení přes herní logiku (ta při skrytých vrstvách lije jen viditelnou část)
       const g = cloneState(s);
       for (const m of res.moves) {
-        let left = m.count;
-        while (left > 0) {
-          const n = pourCount(g, m.from, m.to);
-          expect(n, `úroveň ${i + 1}`).toBeGreaterThan(0);
-          applyMove(g, m.from, m.to);
-          left -= n;
-        }
+        expect(pourCount(g, m.from, m.to), `úroveň ${i + 1}`).toBe(m.count);
+        applyMove(g, m.from, m.to);
       }
       expect(isSolved(g), `úroveň ${i + 1}`).toBe(true);
     });
@@ -78,6 +73,33 @@ describe('pravidla', () => {
 
   it('úvodní pozice žádné úrovně není deadlock', () => {
     levels.forEach((l, i) => expect(isDeadlocked(levelToState(l)), `úroveň ${i + 1}`).toBe(false));
+  });
+
+  it('zkumavka s otazníkem není hotová, ani když je pod ním správná barva', () => {
+    const s = levelToState({ p: 4, t: 'abbb,a,', h: 1 });
+    s.tubes = ['aaaa', '', 'bbbb'];
+    s.hidden = [1, 0, 0];
+    expect(isTubeDone(s, 0)).toBe(false);
+    expect(isTubeDone(s, 2)).toBe(true);
+    expect(isSolved(s)).toBe(false);
+    expect(isDeadlocked(s)).toBe(false); // jde přelít viditelné „aaa“ a otazník odkrýt
+    expect(pourCount(s, 0, 1)).toBe(3);
+    applyMove(s, 0, 1);
+    expect(s.hidden[0]).toBe(0);
+    applyMove(s, 1, 0);
+    expect(isSolved(s)).toBe(true);
+  });
+
+  it('solver nepovažuje zkumavku s otazníkem za hotovou', () => {
+    const s = levelToState({ p: 4, t: 'aaaa,bbbb,' });
+    s.hidden = [3, 0, 0];
+    expect(isSolved(s)).toBe(false);
+    const res = solve(s.tubes, s.caps, s.per, { hidden: s.hidden });
+    expect(res.status).toBe('solved');
+    expect(res.moves.length).toBeGreaterThan(0);
+    for (const m of res.moves) applyMove(s, m.from, m.to);
+    expect(s.hidden[0]).toBe(0);
+    expect(isSolved(s)).toBe(true);
   });
 
   it('skrytá vrstva se odkryje, když se dostane navrch', () => {
